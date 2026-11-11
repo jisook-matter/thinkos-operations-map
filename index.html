@@ -186,6 +186,11 @@ h3{font-size:14px;font-weight:600;margin:0}
 .mk.done .pin{opacity:.45}
 .mbmode .depot{transform:translate(-50%,-50%)}
 .mapctl .iconbtn.on{background:var(--accent-soft);color:var(--accent-strong)}
+.mapwrap.loading #fb,.mapwrap.loading #mkLayer{visibility:hidden}
+.mapwrap .ldg{display:none}
+.mapwrap.loading .ldg{display:flex;position:absolute;inset:0;align-items:center;justify-content:center;gap:10px;color:var(--dim);font-size:13px;background:var(--land)}
+.ldg i{width:18px;height:18px;border-radius:50%;border:2.5px solid var(--line);border-top-color:var(--accent-strong);animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
 .mapctl .sep{width:1px;background:var(--line);margin:6px 2px}
 #mbx .mapboxgl-ctrl-logo{margin-left:6px}
 </style>
@@ -201,7 +206,8 @@ h3{font-size:14px;font-weight:600;margin:0}
 </header>
 
 <div class="main">
-  <section class="mapwrap" id="mapwrap" aria-label="Map">
+  <section class="mapwrap loading" id="mapwrap" aria-label="Map">
+    <div class="ldg" role="status"><i></i>Loading map…</div>
     <div id="fb"></div>
     <div id="mbx" hidden></div>
     <div id="mkLayer"></div>
@@ -399,14 +405,14 @@ function paintMarkers(){
 })();
 function loadMapbox(token){
  var msg=$('mbMsg');msg.textContent='Connecting to Mapbox…';
- function fail(t){msg.textContent=t;$('srcLbl').textContent='Illustrative map';$('srcDot').className='dot off';}
+ function fail(t){wrap.classList.remove('loading');msg.textContent=t;$('srcLbl').textContent='Illustrative map';$('srcDot').className='dot off';}
  function start(){
   var done=false,map;
   try{window.mapboxgl.accessToken=token;$('mbx').hidden=false;
    map=new window.mapboxgl.Map({container:'mbx',style:'mapbox://styles/mapbox/standard',config:{basemap:{lightPreset:'day',showPointOfInterestLabels:true,showTransitLabels:false,show3dObjects:true}},center:[115.7595,-32.0172],zoom:14.2,pitch:MB_PITCH,bearing:MB_BEARING,antialias:true,attributionControl:true});
   }catch(err){$('mbx').hidden=true;fail('Mapbox could not start: '+err.message);return;}
   var timer=setTimeout(function(){if(!done){done=true;try{map.remove();}catch(e){}$('mbx').hidden=true;fail('Could not reach Mapbox from here. Open this page as a file in a browser, and check the token.');}},9000);
-  map.on('load',function(){if(done)return;done=true;clearTimeout(timer);mb=map;fb.hidden=true;
+  map.on('load',function(){if(done)return;done=true;clearTimeout(timer);mb=map;fb.hidden=true;wrap.classList.remove('loading');
    document.body.classList.add('mbmode');
    A.forEach(function(a){els[a.id].style.left='';els[a.id].style.top='';mbMarkers.push(new window.mapboxgl.Marker({element:els[a.id],pitchAlignment:'viewport',rotationAlignment:'viewport'}).setLngLat([a.lng,a.lat]).addTo(map));});
    depotEl.style.left='';depotEl.style.top='';new window.mapboxgl.Marker({element:depotEl}).setLngLat([DEPOT.lng,DEPOT.lat]).addTo(map);
